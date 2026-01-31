@@ -11,4 +11,4 @@ Knowns bug:
 6) The password feature don't work
 7) When you ban a player they get not kicked
 8) When you open the chat for example if your chat button is T if you try to write a word that contain the T like "Kitchen" when you will write the T the chat will close
-
+9) When you press "refresh" on the server list it display wrongly the online/max player status
