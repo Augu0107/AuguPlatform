@@ -10,4 +10,5 @@ Knowns bug:
 5) Player if break all the block down to the void they get bugged and you need to create a new world
 6) The password feature don't work
 7) When you ban a player they get not kicked
+8) When you open the chat for example if your chat button is T if you try to write a word that contain the T like "Kitchen" when you will write the T the chat will close
 
