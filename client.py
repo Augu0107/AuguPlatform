@@ -1800,6 +1800,10 @@ def game_screen(conn: ServerConnection):
     
     while running and conn.connected:
         delta_time = clock.tick(FPS) / 1000.0
+        
+        # CRITICAL: Limit delta_time to prevent physics bugs when window is moved/minimized
+        # If delta_time is too large (>0.1s), the player teleports due to huge velocity jumps
+        delta_time = min(delta_time, 0.1)  # Max 100ms per frame
         frame_count += 1
         
         # Check if we got a respawn command from server
@@ -2309,3 +2313,8 @@ if __name__ == "__main__":
     if main_menu():
         pass
     pygame.quit()
+
+        
+
+
+    
