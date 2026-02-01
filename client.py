@@ -45,6 +45,76 @@ def recv_all(sock, n):
     return bytes(data)
 
 # =========================
+# TEXTURE SYSTEM
+# =========================
+import os as os_module
+
+# Default texture pack
+current_texture_pack = "default"
+block_textures = {}
+
+def load_texture_pack(pack_name):
+    """Load texture pack from textures folder"""
+    global block_textures, current_texture_pack
+    
+    textures_dir = "textures"
+    pack_dir = os_module.path.join(textures_dir, pack_name)
+    
+    block_textures = {}
+    
+    # List of block types to load
+    block_types = ["dirt", "grass", "stone", "sand", "wood", "bedrock"]
+    
+    for block_type in block_types:
+        texture_path = os_module.path.join(pack_dir, f"{block_type}.png")
+        
+        if os_module.path.exists(texture_path):
+            try:
+                texture = pygame.image.load(texture_path)
+                # Scale to BLOCK_SIZE
+                texture = pygame.transform.scale(texture, (BLOCK_SIZE, BLOCK_SIZE))
+                block_textures[block_type] = texture
+            except Exception as e:
+                print(f"Error loading {texture_path}: {e}")
+                block_textures[block_type] = None
+        else:
+            block_textures[block_type] = None
+    
+    current_texture_pack = pack_name
+    
+    # Save to settings
+    settings["texture_pack"] = pack_name
+    save_settings(settings)
+
+def get_available_texture_packs():
+    """Get list of available texture packs"""
+    textures_dir = "textures"
+    
+    if not os_module.path.exists(textures_dir):
+        return []
+    
+    packs = []
+    for item in os_module.listdir(textures_dir):
+        pack_path = os_module.path.join(textures_dir, item)
+        if os_module.path.isdir(pack_path):
+            packs.append(item)
+    
+    return packs
+
+def draw_block(surface, block_type, x, y):
+    """Draw a block with texture or fallback to color"""
+    texture = block_textures.get(block_type)
+    
+    if texture:
+        # Draw texture
+        surface.blit(texture, (x, y))
+    else:
+        # Fallback to color
+        color = BLOCK_COLORS.get(block_type, GRAY)
+        pygame.draw.rect(surface, color, (x, y, BLOCK_SIZE, BLOCK_SIZE))
+        pygame.draw.rect(surface, BLACK, (x, y, BLOCK_SIZE, BLOCK_SIZE), 1)
+
+# =========================
 # CONFIG
 # =========================
 SCREEN_WIDTH = 1200
@@ -99,7 +169,7 @@ PLAYER_COLORS = {
 
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("2D Multiplayer Platform Game")
+pygame.display.set_caption("AuguPlatformer")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("Arial", 18)
 small_font = pygame.font.SysFont("Arial", 14)
@@ -122,13 +192,18 @@ DEFAULT_APPEARANCE = {
 
 DEFAULT_LANGUAGE = "english"
 
+DEFAULT_VIDEO = {
+    "resolution": "1200x700",
+    "fullscreen": False
+}
+
 # =========================
 # TRANSLATIONS
 # =========================
 TRANSLATIONS = {
     "english": {
         # Main Menu
-        "title": "Platform Multiplayer",
+        "title": "AuguPlatformer",
         "your_id": "Your ID",
         "play": "Play",
         "settings": "Settings",
@@ -186,10 +261,21 @@ TRANSLATIONS = {
         "ok": "OK",
         "yes": "Yes",
         "no": "No",
+        
+        # Texture Packs
+        "texture_packs": "Texture Packs",
+        "select_texture_pack": "Select Texture Pack",
+        
+        # Video Settings
+        "video": "Video",
+        "resolution": "Resolution",
+        "fullscreen": "Fullscreen",
+        "windowed": "Windowed",
+        "apply": "Apply",
     },
     "italiano": {
         # Main Menu
-        "title": "Platform Multiplayer",
+        "title": "AuguPlatformer",
         "your_id": "Il Tuo ID",
         "play": "Gioca",
         "settings": "Impostazioni",
@@ -247,6 +333,27 @@ TRANSLATIONS = {
         "ok": "OK",
         "yes": "Sì",
         "no": "No",
+        
+        # Texture Packs
+        "texture_packs": "Pacchetti Texture",
+        "select_texture_pack": "Seleziona Pacchetto Texture",
+        
+        # Video Settings
+        "video": "Video",
+        "resolution": "Risoluzione",
+        "fullscreen": "Schermo Intero",
+        "windowed": "Finestra",
+        "apply": "Applica",
+        
+        # Color names
+        "red": "Rosso",
+        "blue": "Blu",
+        "green": "Verde",
+        "yellow": "Giallo",
+        "purple": "Viola",
+        "orange": "Arancione",
+        "cyan": "Ciano",
+        "pink": "Rosa",
     }
 }
 
@@ -263,17 +370,23 @@ def load_settings():
         settings = {
             "controls": DEFAULT_CONTROLS.copy(),
             "appearance": DEFAULT_APPEARANCE.copy(),
-            "language": DEFAULT_LANGUAGE
+            "language": DEFAULT_LANGUAGE,
+            "video": DEFAULT_VIDEO.copy(),
+            "texture_pack": "default"
         }
         with open(SETTINGS_FILE, "w") as f:
             json.dump(settings, f, indent=4)
     with open(SETTINGS_FILE) as f:
         loaded = json.load(f)
-        # Ensure appearance exists
+        # Ensure all settings exist
         if "appearance" not in loaded:
             loaded["appearance"] = DEFAULT_APPEARANCE.copy()
         if "language" not in loaded:
             loaded["language"] = DEFAULT_LANGUAGE
+        if "video" not in loaded:
+            loaded["video"] = DEFAULT_VIDEO.copy()
+        if "texture_pack" not in loaded:
+            loaded["texture_pack"] = "default"
         return loaded
 
 def save_settings(settings):
@@ -283,6 +396,12 @@ def save_settings(settings):
 settings = load_settings()
 controls = settings.get("controls", DEFAULT_CONTROLS.copy())
 appearance = settings.get("appearance", DEFAULT_APPEARANCE.copy())
+
+# Load texture pack
+try:
+    load_texture_pack(settings.get("texture_pack", "default"))
+except:
+    print("Could not load texture pack, using colors")
 
 # =========================
 # PLAYER ID SAFE
@@ -356,6 +475,8 @@ class ServerConnection:
         self.last_position_send = time.time()
         self.disconnect_reason = None
         self.respawn_flag = False
+        self.max_players = 10
+        self.current_players = 0
 
     def connect(self):
         try:
@@ -400,6 +521,8 @@ class ServerConnection:
                     self.player_y = msg.get("y", 3)
                     self.hotbar = msg.get("hotbar", [None] * 7)
                     self.player_level = msg.get("level", 0)
+                    self.max_players = msg.get("max_players", 10)
+                    self.current_players = msg.get("current_players", 1)
                     print(f"Received welcome: world size {len(self.world)}x{len(self.world[0]) if self.world else 0}")
                 
                 elif msg.get("type") == "respawn":
@@ -669,9 +792,11 @@ def main_menu():
 # SETTINGS SCREEN
 # =========================
 def settings_screen():
-    controls_btn = Button((SCREEN_WIDTH//2-100, 180, 200, 50), t("controls"))
-    appearance_btn = Button((SCREEN_WIDTH//2-100, 250, 200, 50), t("appearance"))
-    language_btn = Button((SCREEN_WIDTH//2-100, 320, 200, 50), t("language"))
+    controls_btn = Button((SCREEN_WIDTH//2-100, 150, 200, 50), t("controls"))
+    appearance_btn = Button((SCREEN_WIDTH//2-100, 210, 200, 50), t("appearance"))
+    video_btn = Button((SCREEN_WIDTH//2-100, 270, 200, 50), t("video"))
+    texture_btn = Button((SCREEN_WIDTH//2-100, 330, 200, 50), t("texture_packs"))
+    language_btn = Button((SCREEN_WIDTH//2-100, 390, 200, 50), t("language"))
     back_btn = Button((50, 30, 100, 40), t("back"))
     
     running = True
@@ -681,6 +806,8 @@ def settings_screen():
         # Update button texts
         controls_btn.text = t("controls")
         appearance_btn.text = t("appearance")
+        video_btn.text = t("video")
+        texture_btn.text = t("texture_packs")
         language_btn.text = t("language")
         back_btn.text = t("back")
         
@@ -692,11 +819,15 @@ def settings_screen():
         
         controls_btn.update(mouse_pos)
         appearance_btn.update(mouse_pos)
+        video_btn.update(mouse_pos)
+        texture_btn.update(mouse_pos)
         language_btn.update(mouse_pos)
         back_btn.update(mouse_pos)
         
         controls_btn.draw(screen)
         appearance_btn.draw(screen)
+        video_btn.draw(screen)
+        texture_btn.draw(screen)
         language_btn.draw(screen)
         back_btn.draw(screen)
         
@@ -710,6 +841,10 @@ def settings_screen():
                     controls_screen()
                 elif appearance_btn.is_clicked(event.pos):
                     appearance_screen()
+                elif video_btn.is_clicked(event.pos):
+                    video_settings_screen()
+                elif texture_btn.is_clicked(event.pos):
+                    texture_packs_screen()
                 elif language_btn.is_clicked(event.pos):
                     language_screen()
         
@@ -729,16 +864,16 @@ def get_key_name(key):
 def controls_screen():
     global controls
     
-    back_btn = Button((50, 30, 100, 40), "Back")
-    reset_btn = Button((SCREEN_WIDTH - 150, 30, 100, 40), "Reset")
+    back_btn = Button((50, 30, 100, 40), t("back"))
+    reset_btn = Button((SCREEN_WIDTH - 150, 30, 100, 40), t("reset"))
     
     control_actions = [
-        ("move_left", "Move Left"),
-        ("move_right", "Move Right"),
-        ("jump", "Jump"),
-        ("chat", "Open Chat"),
-        ("break_block", "Break Block"),
-        ("place_block", "Place Block"),
+        ("move_left", "move_left"),
+        ("move_right", "move_right"),
+        ("jump", "jump"),
+        ("chat", "open_chat"),
+        ("break_block", "break_block"),
+        ("place_block", "place_block"),
     ]
     
     waiting_for_key = None
@@ -747,10 +882,14 @@ def controls_screen():
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
+        # Update button texts
+        back_btn.text = t("back")
+        reset_btn.text = t("reset")
+        
         screen.fill((30,30,30))
         
         # Title
-        title = pygame.font.SysFont("Arial", 36, bold=True).render("Controls", True, WHITE)
+        title = pygame.font.SysFont("Arial", 36, bold=True).render(t("controls"), True, WHITE)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 80))
         
         back_btn.update(mouse_pos)
@@ -762,9 +901,9 @@ def controls_screen():
         # Draw controls
         y = 180
         control_btns = []
-        for action, display_name in control_actions:
-            # Action name
-            action_text = font.render(display_name + ":", True, WHITE)
+        for action, translation_key in control_actions:
+            # Action name (translated)
+            action_text = font.render(t(translation_key) + ":", True, WHITE)
             screen.blit(action_text, (200, y))
             
             # Current key button
@@ -772,7 +911,7 @@ def controls_screen():
             key_name = get_key_name(current_key)
             
             if waiting_for_key == action:
-                key_name = "Press a key..."
+                key_name = t("press_key")
                 color = (255, 200, 100)
             else:
                 color = (150, 150, 200)
@@ -785,7 +924,7 @@ def controls_screen():
             y += 60
         
         if waiting_for_key:
-            info_text = small_font.render("Press ESC to cancel", True, (255, 255, 100))
+            info_text = small_font.render(t("press_esc_cancel"), True, (255, 255, 100))
             screen.blit(info_text, (SCREEN_WIDTH//2 - info_text.get_width()//2, SCREEN_HEIGHT - 50))
         
         for event in pygame.event.get():
@@ -884,12 +1023,173 @@ def language_screen():
         clock.tick(FPS)
 
 # =========================
+# VIDEO SETTINGS SCREEN
+# =========================
+def video_settings_screen():
+    global screen, SCREEN_WIDTH, SCREEN_HEIGHT, settings
+    
+    back_btn = Button((50, 30, 100, 40), t("back"))
+    
+    resolutions = [
+        "800x600",
+        "1024x768",
+        "1200x700",
+        "1280x720",
+        "1366x768",
+        "1600x900",
+        "1920x1080"
+    ]
+    
+    current_res = settings.get("video", DEFAULT_VIDEO).get("resolution", "1200x700")
+    current_fullscreen = settings.get("video", DEFAULT_VIDEO).get("fullscreen", False)
+    
+    running = True
+    while running:
+        mouse_pos = pygame.mouse.get_pos()
+        
+        back_btn.text = t("back")
+        
+        screen.fill((30,30,30))
+        
+        # Title
+        title = pygame.font.SysFont("Arial", 36, bold=True).render(t("video"), True, WHITE)
+        screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 80))
+        
+        back_btn.update(mouse_pos)
+        back_btn.draw(screen)
+        
+        # Resolution selection
+        y = 180
+        res_label = font.render(t("resolution") + ":", True, WHITE)
+        screen.blit(res_label, (150, y))
+        
+        res_buttons = []
+        for i, res in enumerate(resolutions):
+            btn_y = y + 40 + i * 45
+            is_current = (res == current_res)
+            color = (100, 255, 100) if is_current else (200, 200, 200)
+            btn = Button((400, btn_y, 150, 35), res, color)
+            btn.update(mouse_pos)
+            btn.draw(screen)
+            res_buttons.append((btn, res))
+        
+        # Fullscreen toggle
+        fs_y = y + 40 + len(resolutions) * 45 + 20
+        fs_label = font.render(t("fullscreen") + ":", True, WHITE)
+        screen.blit(fs_label, (150, fs_y))
+        
+        fs_text = t("fullscreen") if current_fullscreen else t("windowed")
+        fs_color = (100, 255, 100) if current_fullscreen else (255, 200, 100)
+        fs_btn = Button((400, fs_y - 5, 150, 35), fs_text, fs_color)
+        fs_btn.update(mouse_pos)
+        fs_btn.draw(screen)
+        
+        # Apply button
+        apply_btn = Button((SCREEN_WIDTH//2 - 75, SCREEN_HEIGHT - 100, 150, 50), t("apply"), (100, 200, 255))
+        apply_btn.update(mouse_pos)
+        apply_btn.draw(screen)
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if back_btn.is_clicked(event.pos):
+                    running = False
+                elif apply_btn.is_clicked(event.pos):
+                    # Apply settings
+                    w, h = map(int, current_res.split('x'))
+                    SCREEN_WIDTH = w
+                    SCREEN_HEIGHT = h
+                    
+                    if current_fullscreen:
+                        screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
+                    else:
+                        screen = pygame.display.set_mode((w, h))
+                    
+                    settings["video"] = {
+                        "resolution": current_res,
+                        "fullscreen": current_fullscreen
+                    }
+                    save_settings(settings)
+                    running = False
+                elif fs_btn.is_clicked(event.pos):
+                    current_fullscreen = not current_fullscreen
+                else:
+                    for btn, res in res_buttons:
+                        if btn.is_clicked(event.pos):
+                            current_res = res
+        
+        pygame.display.flip()
+        clock.tick(FPS)
+
+# =========================
+# TEXTURE PACKS SCREEN
+# =========================
+def texture_packs_screen():
+    global settings, current_texture_pack
+    
+    back_btn = Button((50, 30, 100, 40), t("back"))
+    
+    # Get available packs
+    packs = get_available_texture_packs()
+    if not packs:
+        packs = ["default"]  # At least show default
+    
+    running = True
+    while running:
+        mouse_pos = pygame.mouse.get_pos()
+        
+        back_btn.text = t("back")
+        
+        screen.fill((30,30,30))
+        
+        # Title
+        title = pygame.font.SysFont("Arial", 36, bold=True).render(t("texture_packs"), True, WHITE)
+        screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 80))
+        
+        back_btn.update(mouse_pos)
+        back_btn.draw(screen)
+        
+        # Pack buttons
+        y = 180
+        pack_buttons = []
+        for pack_name in packs:
+            is_current = (pack_name == current_texture_pack)
+            color = (100, 255, 100) if is_current else (200, 200, 200)
+            
+            btn = Button((SCREEN_WIDTH//2 - 150, y, 300, 50), pack_name.capitalize(), color)
+            btn.update(mouse_pos)
+            btn.draw(screen)
+            pack_buttons.append((btn, pack_name))
+            
+            y += 60
+        
+        # Info text
+        if not get_available_texture_packs():
+            info_text = small_font.render("Nessun texture pack trovato in /textures/", True, (255, 200, 100))
+            screen.blit(info_text, (SCREEN_WIDTH//2 - info_text.get_width()//2, y + 20))
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if back_btn.is_clicked(event.pos):
+                    running = False
+                else:
+                    for btn, pack_name in pack_buttons:
+                        if btn.is_clicked(event.pos):
+                            load_texture_pack(pack_name)
+        
+        pygame.display.flip()
+        clock.tick(FPS)
+
+# =========================
 # APPEARANCE SCREEN
 # =========================
 def appearance_screen(active_connection=None):
     global appearance
     
-    back_btn = Button((50, 30, 100, 40), "Back")
+    back_btn = Button((50, 30, 100, 40), t("back"))
     
     color_buttons = []
     colors = list(PLAYER_COLORS.keys())
@@ -908,10 +1208,12 @@ def appearance_screen(active_connection=None):
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
+        back_btn.text = t("back")
+        
         screen.fill((30,30,30))
         
         # Title
-        title = pygame.font.SysFont("Arial", 36, bold=True).render("Player Appearance", True, WHITE)
+        title = pygame.font.SysFont("Arial", 36, bold=True).render(t("player_appearance"), True, WHITE)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 80))
         
         back_btn.update(mouse_pos)
@@ -937,8 +1239,9 @@ def appearance_screen(active_connection=None):
             pygame.draw.rect(screen, head_color, head_rect)
             pygame.draw.rect(screen, BLACK, head_rect, 2)
             
-            # Color name
-            name_text = small_font.render(color_name.capitalize(), True, WHITE)
+            # Color name (translated if available)
+            translated_name = t(color_name) if t(color_name) != color_name else color_name.capitalize()
+            name_text = small_font.render(translated_name, True, WHITE)
             name_rect = name_text.get_rect(center=(rect.centerx, rect.bottom + 15))
             screen.blit(name_text, name_rect)
         
@@ -1066,13 +1369,13 @@ def server_list_screen():
         clock.tick(FPS)
 
 def add_server_dialog():
-    ip = text_input_box("Enter Server IP:")
+    ip = text_input_box(t("enter_ip"))
     if ip is None:
         return
-    port = text_input_box("Enter Server Port:")
+    port = text_input_box(t("enter_port"))
     if port is None:
         return
-    password = text_input_box("Enter Server Password (0 if none):")
+    password = text_input_box(t("enter_password"))
     if password is None:
         return
     try:
@@ -1084,13 +1387,13 @@ def add_server_dialog():
     save_servers(servers)
 
 def modify_server_dialog(s):
-    ip = text_input_box(f"Edit IP ({s['ip']}):")
+    ip = text_input_box(f"{t('edit_ip')} ({s['ip']}):")
     if ip is None:
         return
-    port = text_input_box(f"Edit Port ({s['port']}):")
+    port = text_input_box(f"{t('edit_port')} ({s['port']}):")
     if port is None:
         return
-    password = text_input_box(f"Edit Password ({s.get('password', '0')}):")
+    password = text_input_box(f"{t('edit_password')} ({s.get('password', '0')}):")
     if password is None:
         return
     try:
@@ -1116,8 +1419,8 @@ def refresh_servers():
                 
                 s['name'] = conn.server_name if conn.server_name else "???"
                 s['motd'] = conn.motd if conn.motd else "???"
-                s['current'] = len(conn.players) + 1  # +1 for ourselves
-                s['max'] = 10
+                s['current'] = conn.current_players
+                s['max'] = conn.max_players
                 try:
                     conn.sock.close()
                 except:
@@ -1516,9 +1819,7 @@ def game_screen(conn: ServerConnection):
                 
                 if -BLOCK_SIZE < screen_x < SCREEN_WIDTH and -BLOCK_SIZE < screen_y < SCREEN_HEIGHT:
                     if block != "air":
-                        color = BLOCK_COLORS.get(block, GRAY)
-                        pygame.draw.rect(screen, color, (screen_x, screen_y, BLOCK_SIZE, BLOCK_SIZE))
-                        pygame.draw.rect(screen, BLACK, (screen_x, screen_y, BLOCK_SIZE, BLOCK_SIZE), 1)
+                        draw_block(screen, block, screen_x, screen_y)
         
         # Draw other players
         for other_pid, (ox, oy) in conn.players.items():
