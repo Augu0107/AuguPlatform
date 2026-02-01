@@ -168,8 +168,9 @@ PLAYER_COLORS = {
 }
 
 pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("AuguPlatformer")
+
+# Screen will be initialized after loading settings
+screen = None
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("Arial", 18)
 small_font = pygame.font.SysFont("Arial", 14)
@@ -182,8 +183,9 @@ DEFAULT_CONTROLS = {
     "move_right": pygame.K_d,
     "jump": pygame.K_SPACE,
     "chat": pygame.K_t,
-    "break_block": 1,  # Left mouse button
-    "place_block": 3,  # Right mouse button
+    "break_block": 3,  # Right mouse button
+    "place_block": 1,  # Left mouse button
+    "inventory": pygame.K_e,
 }
 
 DEFAULT_APPEARANCE = {
@@ -223,6 +225,7 @@ TRANSLATIONS = {
         "open_chat": "Open Chat",
         "break_block": "Break Block",
         "place_block": "Place Block",
+        "inventory": "Inventory",
         "press_key": "Press a key...",
         "press_esc_cancel": "Press ESC to cancel",
         
@@ -295,6 +298,7 @@ TRANSLATIONS = {
         "open_chat": "Apri Chat",
         "break_block": "Rompi Blocco",
         "place_block": "Piazza Blocco",
+        "inventory": "Inventario",
         "press_key": "Premi un tasto...",
         "press_esc_cancel": "Premi ESC per annullare",
         
@@ -396,6 +400,25 @@ def save_settings(settings):
 settings = load_settings()
 controls = settings.get("controls", DEFAULT_CONTROLS.copy())
 appearance = settings.get("appearance", DEFAULT_APPEARANCE.copy())
+
+# Apply saved video settings
+saved_video = settings.get("video", DEFAULT_VIDEO)
+saved_resolution = saved_video.get("resolution", "1200x700")
+saved_fullscreen = saved_video.get("fullscreen", False)
+
+if saved_fullscreen:
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    # Get actual fullscreen resolution
+    info = pygame.display.Info()
+    SCREEN_WIDTH = info.current_w
+    SCREEN_HEIGHT = info.current_h
+else:
+    w, h = map(int, saved_resolution.split('x'))
+    SCREEN_WIDTH = w
+    SCREEN_HEIGHT = h
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+pygame.display.set_caption("AuguPlatformer")
 
 # Load texture pack
 try:
@@ -699,8 +722,12 @@ def text_input_box(prompt, width=400, height=35):
     input_text = ""
     active = True
     box_rect = pygame.Rect(SCREEN_WIDTH//2 - width//2, SCREEN_HEIGHT//2, width, height)
+    ok_btn = Button((SCREEN_WIDTH//2 - 110, SCREEN_HEIGHT//2 + 60, 100, 40), t("ok"))
+    cancel_btn = Button((SCREEN_WIDTH//2 + 10, SCREEN_HEIGHT//2 + 60, 100, 40), t("back"))
     
     while active:
+        mouse_pos = pygame.mouse.get_pos()
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return None
@@ -714,6 +741,11 @@ def text_input_box(prompt, width=400, height=35):
                 else:
                     if len(input_text) < 50:
                         input_text += event.unicode
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if ok_btn.is_clicked(event.pos):
+                    return input_text
+                elif cancel_btn.is_clicked(event.pos):
+                    return None
         
         screen.fill((50,50,50))
         
@@ -734,6 +766,12 @@ def text_input_box(prompt, width=400, height=35):
             cursor_x = box_rect.x + 5 + text_surface.get_width()
             pygame.draw.line(screen, BLACK, (cursor_x, box_rect.y + 5), (cursor_x, box_rect.y + height - 5), 2)
         
+        # Draw buttons
+        ok_btn.update(mouse_pos)
+        cancel_btn.update(mouse_pos)
+        ok_btn.draw(screen)
+        cancel_btn.draw(screen)
+        
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -741,18 +779,14 @@ def text_input_box(prompt, width=400, height=35):
 # MAIN MENU
 # =========================
 def main_menu():
-    play_btn = Button((SCREEN_WIDTH//2-75, 250, 150, 50), t("play"))
-    settings_btn = Button((SCREEN_WIDTH//2-75, 320, 150, 50), t("settings"))
-    exit_btn = Button((SCREEN_WIDTH//2-75, 390, 150, 50), t("exit"))
-    
     running = True
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
-        # Update button texts in case language changed
-        play_btn.text = t("play")
-        settings_btn.text = t("settings")
-        exit_btn.text = t("exit")
+        # Create buttons dynamically centered
+        play_btn = Button((SCREEN_WIDTH//2-75, 250, 150, 50), t("play"))
+        settings_btn = Button((SCREEN_WIDTH//2-75, 320, 150, 50), t("settings"))
+        exit_btn = Button((SCREEN_WIDTH//2-75, 390, 150, 50), t("exit"))
         
         screen.fill((40, 40, 70))
         
@@ -792,24 +826,17 @@ def main_menu():
 # SETTINGS SCREEN
 # =========================
 def settings_screen():
-    controls_btn = Button((SCREEN_WIDTH//2-100, 150, 200, 50), t("controls"))
-    appearance_btn = Button((SCREEN_WIDTH//2-100, 210, 200, 50), t("appearance"))
-    video_btn = Button((SCREEN_WIDTH//2-100, 270, 200, 50), t("video"))
-    texture_btn = Button((SCREEN_WIDTH//2-100, 330, 200, 50), t("texture_packs"))
-    language_btn = Button((SCREEN_WIDTH//2-100, 390, 200, 50), t("language"))
-    back_btn = Button((50, 30, 100, 40), t("back"))
-    
     running = True
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
-        # Update button texts
-        controls_btn.text = t("controls")
-        appearance_btn.text = t("appearance")
-        video_btn.text = t("video")
-        texture_btn.text = t("texture_packs")
-        language_btn.text = t("language")
-        back_btn.text = t("back")
+        # Create buttons dynamically centered
+        controls_btn = Button((SCREEN_WIDTH//2-100, 150, 200, 50), t("controls"))
+        appearance_btn = Button((SCREEN_WIDTH//2-100, 210, 200, 50), t("appearance"))
+        video_btn = Button((SCREEN_WIDTH//2-100, 270, 200, 50), t("video"))
+        texture_btn = Button((SCREEN_WIDTH//2-100, 330, 200, 50), t("texture_packs"))
+        language_btn = Button((SCREEN_WIDTH//2-100, 390, 200, 50), t("language"))
+        back_btn = Button((50, 30, 100, 40), t("back"))
         
         screen.fill((30,30,30))
         
@@ -874,6 +901,7 @@ def controls_screen():
         ("chat", "open_chat"),
         ("break_block", "break_block"),
         ("place_block", "place_block"),
+        ("inventory", "inventory"),
     ]
     
     waiting_for_key = None
@@ -1028,8 +1056,6 @@ def language_screen():
 def video_settings_screen():
     global screen, SCREEN_WIDTH, SCREEN_HEIGHT, settings
     
-    back_btn = Button((50, 30, 100, 40), t("back"))
-    
     resolutions = [
         "800x600",
         "1024x768",
@@ -1047,7 +1073,8 @@ def video_settings_screen():
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
-        back_btn.text = t("back")
+        # Create buttons dynamically centered
+        back_btn = Button((50, 30, 100, 40), t("back"))
         
         screen.fill((30,30,30))
         
@@ -1058,33 +1085,33 @@ def video_settings_screen():
         back_btn.update(mouse_pos)
         back_btn.draw(screen)
         
-        # Resolution selection
+        # Resolution selection - centered
         y = 180
         res_label = font.render(t("resolution") + ":", True, WHITE)
-        screen.blit(res_label, (150, y))
+        screen.blit(res_label, (SCREEN_WIDTH//2 - 200, y))
         
         res_buttons = []
         for i, res in enumerate(resolutions):
             btn_y = y + 40 + i * 45
             is_current = (res == current_res)
             color = (100, 255, 100) if is_current else (200, 200, 200)
-            btn = Button((400, btn_y, 150, 35), res, color)
+            btn = Button((SCREEN_WIDTH//2 - 75, btn_y, 150, 35), res, color)
             btn.update(mouse_pos)
             btn.draw(screen)
             res_buttons.append((btn, res))
         
-        # Fullscreen toggle
+        # Fullscreen toggle - centered
         fs_y = y + 40 + len(resolutions) * 45 + 20
         fs_label = font.render(t("fullscreen") + ":", True, WHITE)
-        screen.blit(fs_label, (150, fs_y))
+        screen.blit(fs_label, (SCREEN_WIDTH//2 - 200, fs_y))
         
         fs_text = t("fullscreen") if current_fullscreen else t("windowed")
         fs_color = (100, 255, 100) if current_fullscreen else (255, 200, 100)
-        fs_btn = Button((400, fs_y - 5, 150, 35), fs_text, fs_color)
+        fs_btn = Button((SCREEN_WIDTH//2 - 75, fs_y - 5, 150, 35), fs_text, fs_color)
         fs_btn.update(mouse_pos)
         fs_btn.draw(screen)
         
-        # Apply button
+        # Apply button - centered
         apply_btn = Button((SCREEN_WIDTH//2 - 75, SCREEN_HEIGHT - 100, 150, 50), t("apply"), (100, 200, 255))
         apply_btn.update(mouse_pos)
         apply_btn.draw(screen)
@@ -1102,7 +1129,11 @@ def video_settings_screen():
                     SCREEN_HEIGHT = h
                     
                     if current_fullscreen:
-                        screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
+                        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                        # Get actual fullscreen resolution
+                        info = pygame.display.Info()
+                        SCREEN_WIDTH = info.current_w
+                        SCREEN_HEIGHT = info.current_h
                     else:
                         screen = pygame.display.set_mode((w, h))
                     
@@ -1201,7 +1232,7 @@ def appearance_screen(active_connection=None):
         row = i // cols
         col = i % cols
         x = start_x + col * 100
-        y = start_y + row * 80
+        y = start_y + row * 100  # Increased from 80 to 100 for more spacing
         color_buttons.append((color_name, pygame.Rect(x, y, 80, 60)))
     
     running = True
@@ -1242,7 +1273,7 @@ def appearance_screen(active_connection=None):
             # Color name (translated if available)
             translated_name = t(color_name) if t(color_name) != color_name else color_name.capitalize()
             name_text = small_font.render(translated_name, True, WHITE)
-            name_rect = name_text.get_rect(center=(rect.centerx, rect.bottom + 15))
+            name_rect = name_text.get_rect(center=(rect.centerx, rect.bottom + 18))  # Increased spacing
             screen.blit(name_text, name_rect)
         
         for event in pygame.event.get():
@@ -1444,23 +1475,25 @@ def refresh_servers():
 # =========================
 def ingame_menu(conn):
     """Show pause menu during gameplay. Returns 'quit', 'settings', or 'resume'"""
-    resume_btn = Button((SCREEN_WIDTH//2-100, 250, 200, 50), "Resume")
-    settings_btn = Button((SCREEN_WIDTH//2-100, 320, 200, 50), "Settings")
-    quit_btn = Button((SCREEN_WIDTH//2-100, 390, 200, 50), "Disconnect")
-    
     running = True
     result = "resume"
+    
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
-        # Semi-transparent overlay
+        # Create buttons dynamically
+        resume_btn = Button((SCREEN_WIDTH//2-100, 250, 200, 50), t("resume"))
+        settings_btn = Button((SCREEN_WIDTH//2-100, 320, 200, 50), t("settings"))
+        quit_btn = Button((SCREEN_WIDTH//2-100, 390, 200, 50), t("disconnect"))
+        
+        # Just draw overlay - game frame should still be visible
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(180)
+        overlay.set_alpha(180)  # Semi-transparent
         overlay.fill((0, 0, 0))
         screen.blit(overlay, (0, 0))
         
         # Title
-        title = pygame.font.SysFont("Arial", 48, bold=True).render("Paused", True, WHITE)
+        title = pygame.font.SysFont("Arial", 48, bold=True).render(t("paused"), True, WHITE)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 150))
         
         resume_btn.update(mouse_pos)
@@ -1498,26 +1531,36 @@ def ingame_menu(conn):
 
 def ingame_settings(conn):
     """Settings menu accessible during gameplay"""
-    controls_btn = Button((SCREEN_WIDTH//2-100, 180, 200, 50), "Controls")
-    appearance_btn = Button((SCREEN_WIDTH//2-100, 250, 200, 50), "Appearance")
-    back_btn = Button((50, 30, 100, 40), "Back")
-    
     running = True
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
+        # Create buttons dynamically centered
+        controls_btn = Button((SCREEN_WIDTH//2-100, 150, 200, 50), t("controls"))
+        appearance_btn = Button((SCREEN_WIDTH//2-100, 210, 200, 50), t("appearance"))
+        video_btn = Button((SCREEN_WIDTH//2-100, 270, 200, 50), t("video"))
+        texture_btn = Button((SCREEN_WIDTH//2-100, 330, 200, 50), t("texture_packs"))
+        language_btn = Button((SCREEN_WIDTH//2-100, 390, 200, 50), t("language"))
+        back_btn = Button((50, 30, 100, 40), t("back"))
+        
         screen.fill((30,30,30))
         
         # Title
-        title = pygame.font.SysFont("Arial", 36, bold=True).render("Settings", True, WHITE)
+        title = pygame.font.SysFont("Arial", 36, bold=True).render(t("settings"), True, WHITE)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 80))
         
         controls_btn.update(mouse_pos)
         appearance_btn.update(mouse_pos)
+        video_btn.update(mouse_pos)
+        texture_btn.update(mouse_pos)
+        language_btn.update(mouse_pos)
         back_btn.update(mouse_pos)
         
         controls_btn.draw(screen)
         appearance_btn.draw(screen)
+        video_btn.draw(screen)
+        texture_btn.draw(screen)
+        language_btn.draw(screen)
         back_btn.draw(screen)
         
         for event in pygame.event.get():
@@ -1533,9 +1576,147 @@ def ingame_settings(conn):
                     controls_screen()
                 elif appearance_btn.is_clicked(event.pos):
                     appearance_screen(conn)  # Pass connection!
+                elif video_btn.is_clicked(event.pos):
+                    video_settings_screen()
+                elif texture_btn.is_clicked(event.pos):
+                    texture_packs_screen()
+                elif language_btn.is_clicked(event.pos):
+                    language_screen()
         
         pygame.display.flip()
         clock.tick(FPS)
+
+# =========================
+# INVENTORY HUD
+# =========================
+def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos):
+    """Draw compact inventory HUD above hotbar with drag & drop"""
+    
+    # Inventory: 3 rows of 7 = 21 slots
+    if not hasattr(conn, 'inventory'):
+        conn.inventory = [None] * 21
+    
+    slot_size = 40
+    spacing = 5
+    
+    # Calculate HUD position - same X as hotbar, extended upwards
+    hotbar_width = 7 * 50 + 20
+    hotbar_x = SCREEN_WIDTH // 2 - hotbar_width // 2
+    hotbar_y = SCREEN_HEIGHT - 70
+    
+    # HUD dimensions
+    hud_width = 7 * slot_size + 6 * spacing + 20
+    hud_height = 4 * slot_size + 3 * spacing + 80  # 3 inventory rows + hotbar + header
+    
+    # Start from hotbar position, extend upwards
+    hud_x = SCREEN_WIDTH // 2 - hud_width // 2
+    hud_y = hotbar_y - hud_height + 50  # Position so it ends where hotbar begins
+    
+    # Semi-transparent background
+    bg_surface = pygame.Surface((hud_width, hud_height))
+    bg_surface.set_alpha(220)
+    bg_surface.fill((40, 40, 40))
+    screen.blit(bg_surface, (hud_x, hud_y))
+    
+    # Border
+    pygame.draw.rect(screen, (200, 200, 200), (hud_x, hud_y, hud_width, hud_height), 2)
+    
+    # Header with player info
+    header_y = hud_y + 5
+    
+    # Player ID (smaller)
+    id_text = small_font.render(f"{PLAYER_ID}", True, (255, 255, 100))
+    screen.blit(id_text, (hud_x + 10, header_y))
+    
+    # Player preview (small)
+    preview_x = hud_x + hud_width - 40
+    preview_y = header_y
+    body_color = PLAYER_COLORS.get(appearance_color, (0, 255, 255))
+    
+    # Tiny player preview
+    pygame.draw.rect(screen, body_color, (preview_x, preview_y + 10, 15, 10))
+    pygame.draw.rect(screen, BLACK, (preview_x, preview_y + 10, 15, 10), 1)
+    pygame.draw.rect(screen, PINK, (preview_x, preview_y, 15, 10))
+    pygame.draw.rect(screen, BLACK, (preview_x, preview_y, 15, 10), 1)
+    
+    # Inventory title
+    inv_title = small_font.render(t("inventory"), True, WHITE)
+    screen.blit(inv_title, (hud_x + hud_width//2 - inv_title.get_width()//2, header_y))
+    
+    # Start of slots
+    slots_start_y = hud_y + 30
+    slots_start_x = hud_x + 10
+    
+    # Draw 3 rows of inventory
+    inventory_slots = []
+    for row in range(3):
+        for col in range(7):
+            idx = row * 7 + col
+            slot_x = slots_start_x + col * (slot_size + spacing)
+            slot_y = slots_start_y + row * (slot_size + spacing)
+            slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
+            
+            # Draw slot
+            pygame.draw.rect(screen, (60, 60, 60), slot_rect)
+            pygame.draw.rect(screen, (150, 150, 150), slot_rect, 1)
+            
+            # Draw item if exists
+            if conn.inventory[idx] is not None:
+                block_type = conn.inventory[idx]["block"]
+                count = conn.inventory[idx]["count"]
+                
+                # Draw block texture or color
+                texture = block_textures.get(block_type)
+                if texture:
+                    scaled_texture = pygame.transform.scale(texture, (slot_size - 6, slot_size - 6))
+                    screen.blit(scaled_texture, (slot_x + 3, slot_y + 3))
+                else:
+                    block_color = BLOCK_COLORS.get(block_type, GRAY)
+                    pygame.draw.rect(screen, block_color, (slot_x + 3, slot_y + 3, slot_size - 6, slot_size - 6))
+                
+                # Draw count
+                count_text = small_font.render(str(count), True, WHITE)
+                screen.blit(count_text, (slot_x + slot_size - 15, slot_y + slot_size - 15))
+            
+            inventory_slots.append(('inventory', idx, slot_rect))
+    
+    # Draw hotbar below inventory (integrated)
+    hotbar_y = slots_start_y + 3 * (slot_size + spacing) + 10
+    hotbar_slots = []
+    for i in range(7):
+        slot_x = slots_start_x + i * (slot_size + spacing)
+        slot_y = hotbar_y
+        slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
+        
+        # Draw slot with highlight if selected
+        if i == selected_slot:
+            pygame.draw.rect(screen, (255, 255, 100), slot_rect)
+            pygame.draw.rect(screen, (255, 200, 0), slot_rect, 2)
+        else:
+            pygame.draw.rect(screen, (80, 80, 50), slot_rect)
+            pygame.draw.rect(screen, (200, 200, 100), slot_rect, 1)
+        
+        # Draw item if exists
+        if conn.hotbar[i] is not None:
+            block_type = conn.hotbar[i]["block"]
+            count = conn.hotbar[i]["count"]
+            
+            # Draw block texture or color
+            texture = block_textures.get(block_type)
+            if texture:
+                scaled_texture = pygame.transform.scale(texture, (slot_size - 6, slot_size - 6))
+                screen.blit(scaled_texture, (slot_x + 3, slot_y + 3))
+            else:
+                block_color = BLOCK_COLORS.get(block_type, GRAY)
+                pygame.draw.rect(screen, block_color, (slot_x + 3, slot_y + 3, slot_size - 6, slot_size - 6))
+            
+            # Draw count
+            count_text = small_font.render(str(count), True, WHITE)
+            screen.blit(count_text, (slot_x + slot_size - 15, slot_y + slot_size - 15))
+        
+        hotbar_slots.append(('hotbar', i, slot_rect))
+    
+    return inventory_slots + hotbar_slots
 
 # =========================
 # GAME SCREEN
@@ -1562,7 +1743,37 @@ def game_screen(conn: ServerConnection):
     # Player physics
     player_x = float(conn.player_x)
     player_y = float(conn.player_y)
-    print(f"Starting position: ({player_x}, {player_y})")
+    
+    # Safe spawn: ensure player is on solid ground, not inside blocks
+    # Player is 2 blocks tall (from Y to Y+2)
+    # We need to find a safe Y position where:
+    # 1. Y and Y+1 are air (player body fits)
+    # 2. Y+2 is solid (ground to stand on) OR player can fall safely
+    
+    player_grid_x = int(player_x)
+    player_grid_y = int(player_y)
+    
+    # Check if currently inside a block
+    max_attempts = 20
+    for attempt in range(max_attempts):
+        player_grid_y = int(player_y)
+        
+        # Check the two blocks the player occupies
+        blocks_clear = True
+        for check_y in [player_grid_y, player_grid_y + 1]:
+            if 0 <= check_y < len(conn.world) and 0 <= player_grid_x < len(conn.world[0]):
+                if conn.world[check_y][player_grid_x] != "air":
+                    blocks_clear = False
+                    break
+        
+        if blocks_clear:
+            # Position is safe
+            break
+        else:
+            # Move up one block
+            player_y -= 1.0
+    
+    print(f"Safe spawn position: ({player_x}, {player_y})")
     
     player_vx = 0
     player_vy = 0
@@ -1574,6 +1785,11 @@ def game_screen(conn: ServerConnection):
     
     # Hotbar
     selected_slot = 0
+    
+    # Inventory
+    inventory_open = False
+    dragging_item = None
+    dragging_from = None
     
     # Chat
     chat_open = False
@@ -1633,6 +1849,19 @@ def game_screen(conn: ServerConnection):
                     if event.key == controls.get("chat", pygame.K_t):
                         chat_open = True
                         chat_input = ""
+                    elif event.key == controls.get("inventory", pygame.K_e):
+                        # Toggle inventory
+                        inventory_open = not inventory_open
+                        if not inventory_open:
+                            # Reset drag state when closing
+                            if dragging_item is not None:
+                                # Return item to original slot
+                                if dragging_from[0] == 'inventory':
+                                    conn.inventory[dragging_from[1]] = dragging_item
+                                else:
+                                    conn.hotbar[dragging_from[1]] = dragging_item
+                            dragging_item = None
+                            dragging_from = None
                     # Hotbar selection
                     elif event.key >= pygame.K_1 and event.key <= pygame.K_7:
                         selected_slot = event.key - pygame.K_1
@@ -1640,23 +1869,28 @@ def game_screen(conn: ServerConnection):
                 if not chat_open:
                     selected_slot = (selected_slot - event.y) % 7
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if not chat_open:
+                if inventory_open:
+                    # Handle inventory drag & drop
+                    if event.button == 1:  # Left click
+                        # Get inventory slots (will be calculated during rendering)
+                        pass  # Handled in MOUSEBUTTONUP with stored slots
+                elif not chat_open:
                     # Get block position under mouse
                     world_mouse_x = (mouse_pos[0] + camera_x) // BLOCK_SIZE
                     world_mouse_y = (mouse_pos[1] + camera_y) // BLOCK_SIZE
                     
-                    # Check if within 1 block distance from player
+                    # Check if within 2 blocks distance from player
                     player_block_x = int(player_x)
                     player_block_y = int(player_y)
                     
-                    # Distance check: can only interact with blocks 1 block away (horizontally or vertically)
+                    # Distance check: can interact with blocks 2 blocks away
                     dx = abs(world_mouse_x - player_block_x)
                     dy_bottom = abs(world_mouse_y - player_block_y)
                     dy_top = abs(world_mouse_y - (player_block_y + 1))
                     dy = min(dy_bottom, dy_top)
                     
-                    # Can reach if within 1 block horizontally and 2 blocks vertically (since player is 2 blocks tall)
-                    can_reach = (dx <= 1 and dy <= 2)
+                    # Can reach if within 2 blocks horizontally and 3 blocks vertically (since player is 2 blocks tall)
+                    can_reach = (dx <= 2 and dy <= 3)
                     
                     if event.button == controls.get("break_block", 1):
                         # Break block
@@ -1670,6 +1904,10 @@ def game_screen(conn: ServerConnection):
                                 # Check if not placing inside player
                                 if not ((world_mouse_x == player_block_x and (world_mouse_y == player_block_y or world_mouse_y == player_block_y + 1))):
                                     conn.place_block(world_mouse_x, world_mouse_y, selected_slot)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if inventory_open and event.button == 1 and hasattr(event, '_inv_slots'):
+                    # Handle inventory drop
+                    pass  # Will be implemented with rendering
         
         # Player movement (only if not in chat)
         if not chat_open:
@@ -1741,7 +1979,7 @@ def game_screen(conn: ServerConnection):
             # Check collisions with blocks - vertical only now
             on_ground = False
             
-            # Vertical collision
+            # Vertical collision - improved to prevent wall jump bugs
             for check_y in [player_grid_y, player_grid_y + 1, player_grid_y + 2]:
                 for check_x in [player_grid_x - 1, player_grid_x, player_grid_x + 1]:
                     if 0 <= check_y < len(conn.world) and 0 <= check_x < len(conn.world[0]):
@@ -1756,16 +1994,24 @@ def game_screen(conn: ServerConnection):
                             player_top = player_y
                             player_bottom = player_y + 2
                             
-                            if player_right > block_left and player_left < block_right:
+                            # More precise horizontal overlap check
+                            h_overlap = min(player_right, block_right) - max(player_left, block_left)
+                            
+                            # Only consider vertical collision if there's significant horizontal overlap
+                            if h_overlap > 0.1:
                                 if player_bottom > block_top and player_top < block_bottom:
                                     # Collision detected
                                     if player_vy > 0:  # Falling
-                                        player_y = block_top - 2
-                                        player_vy = 0
-                                        on_ground = True
+                                        # Only snap to ground if bottom is close to block top
+                                        if player_bottom - block_top < 0.5:
+                                            player_y = block_top - 2
+                                            player_vy = 0
+                                            on_ground = True
                                     elif player_vy < 0:  # Jumping into ceiling
-                                        player_y = block_bottom
-                                        player_vy = 0
+                                        # Only snap to ceiling if top is close to block bottom
+                                        if block_bottom - player_top < 0.5:
+                                            player_y = block_bottom
+                                            player_vy = 0
             
             # Keep player in bounds
             if player_x < 0.5:
@@ -1862,39 +2108,125 @@ def game_screen(conn: ServerConnection):
         pygame.draw.rect(screen, PINK, head_rect)
         pygame.draw.rect(screen, BLACK, head_rect, 2)
         
-        # Draw hotbar
-        hotbar_width = 7 * 50 + 20
-        hotbar_x = SCREEN_WIDTH // 2 - hotbar_width // 2
-        hotbar_y = SCREEN_HEIGHT - 70
-        
-        # Hotbar background
-        hotbar_bg = pygame.Surface((hotbar_width, 60))
-        hotbar_bg.set_alpha(200)
-        hotbar_bg.fill((50, 50, 50))
-        screen.blit(hotbar_bg, (hotbar_x - 10, hotbar_y - 10))
-        
-        for i in range(7):
-            slot_x = hotbar_x + i * 50
-            slot_y = hotbar_y
+        # Draw inventory HUD or hotbar
+        if inventory_open:
+            # Initialize inventory if needed
+            if not hasattr(conn, 'inventory'):
+                conn.inventory = [None] * 21
             
-            # Draw slot background
-            if i == selected_slot:
-                pygame.draw.rect(screen, (255, 255, 100), (slot_x - 2, slot_y - 2, 44, 44), 3)
-            else:
-                pygame.draw.rect(screen, WHITE, (slot_x, slot_y, 40, 40), 2)
+            # Draw full inventory HUD
+            inv_slots = draw_inventory_hud(screen, conn, appearance.get("player_color", "blue"), selected_slot, mouse_pos)
             
-            # Draw item
-            if conn.hotbar[i] is not None:
-                block_type = conn.hotbar[i]["block"]
-                count = conn.hotbar[i]["count"]
+            # Handle drag & drop
+            if pygame.mouse.get_pressed()[0]:  # Left mouse held
+                if dragging_item is None:
+                    # Check if starting drag
+                    for slot_type, slot_idx, slot_rect in inv_slots:
+                        if slot_rect.collidepoint(mouse_pos):
+                            if slot_type == 'inventory':
+                                if conn.inventory[slot_idx] is not None:
+                                    dragging_item = conn.inventory[slot_idx]
+                                    dragging_from = (slot_type, slot_idx)
+                                    conn.inventory[slot_idx] = None
+                            else:  # hotbar
+                                if conn.hotbar[slot_idx] is not None:
+                                    dragging_item = conn.hotbar[slot_idx]
+                                    dragging_from = (slot_type, slot_idx)
+                                    conn.hotbar[slot_idx] = None
+                            break
+            else:  # Mouse released
+                if dragging_item is not None:
+                    # Drop item
+                    dropped = False
+                    for slot_type, slot_idx, slot_rect in inv_slots:
+                        if slot_rect.collidepoint(mouse_pos):
+                            # Swap items
+                            if slot_type == 'inventory':
+                                old_item = conn.inventory[slot_idx]
+                                conn.inventory[slot_idx] = dragging_item
+                                if old_item is not None:
+                                    if dragging_from[0] == 'inventory':
+                                        conn.inventory[dragging_from[1]] = old_item
+                                    else:
+                                        conn.hotbar[dragging_from[1]] = old_item
+                            else:  # hotbar
+                                old_item = conn.hotbar[slot_idx]
+                                conn.hotbar[slot_idx] = dragging_item
+                                if old_item is not None:
+                                    if dragging_from[0] == 'inventory':
+                                        conn.inventory[dragging_from[1]] = old_item
+                                    else:
+                                        conn.hotbar[dragging_from[1]] = old_item
+                            dropped = True
+                            break
+                    
+                    # If not dropped, return to original
+                    if not dropped:
+                        if dragging_from[0] == 'inventory':
+                            conn.inventory[dragging_from[1]] = dragging_item
+                        else:
+                            conn.hotbar[dragging_from[1]] = dragging_item
+                    
+                    dragging_item = None
+                    dragging_from = None
+            
+            # Draw dragging item
+            if dragging_item is not None:
+                block_type = dragging_item["block"]
+                count = dragging_item["count"]
+                slot_size = 40
                 
-                # Draw block preview
-                block_color = BLOCK_COLORS.get(block_type, GRAY)
-                pygame.draw.rect(screen, block_color, (slot_x + 5, slot_y + 5, 30, 30))
+                texture = block_textures.get(block_type)
+                if texture:
+                    scaled_texture = pygame.transform.scale(texture, (slot_size - 6, slot_size - 6))
+                    screen.blit(scaled_texture, (mouse_pos[0] - (slot_size - 6)//2, mouse_pos[1] - (slot_size - 6)//2))
+                else:
+                    block_color = BLOCK_COLORS.get(block_type, GRAY)
+                    pygame.draw.rect(screen, block_color, (mouse_pos[0] - (slot_size - 6)//2, mouse_pos[1] - (slot_size - 6)//2, slot_size - 6, slot_size - 6))
                 
-                # Draw count
                 count_text = small_font.render(str(count), True, WHITE)
-                screen.blit(count_text, (slot_x + 25, slot_y + 25))
+                screen.blit(count_text, (mouse_pos[0] + 10, mouse_pos[1] + 10))
+        else:
+            # Draw simple hotbar
+            hotbar_width = 7 * 50 + 20
+            hotbar_x = SCREEN_WIDTH // 2 - hotbar_width // 2
+            hotbar_y = SCREEN_HEIGHT - 70
+            
+            # Hotbar background
+            hotbar_bg = pygame.Surface((hotbar_width, 60))
+            hotbar_bg.set_alpha(200)
+            hotbar_bg.fill((50, 50, 50))
+            screen.blit(hotbar_bg, (hotbar_x - 10, hotbar_y - 10))
+            
+            for i in range(7):
+                slot_x = hotbar_x + i * 50
+                slot_y = hotbar_y
+                
+                # Draw slot background
+                if i == selected_slot:
+                    pygame.draw.rect(screen, (255, 255, 100), (slot_x - 2, slot_y - 2, 44, 44), 3)
+                else:
+                    pygame.draw.rect(screen, WHITE, (slot_x, slot_y, 40, 40), 2)
+                
+                # Draw item
+                if conn.hotbar[i] is not None:
+                    block_type = conn.hotbar[i]["block"]
+                    count = conn.hotbar[i]["count"]
+                    
+                    # Draw block preview with texture
+                    texture = block_textures.get(block_type)
+                    if texture:
+                        # Scale texture to fit slot
+                        scaled_texture = pygame.transform.scale(texture, (30, 30))
+                        screen.blit(scaled_texture, (slot_x + 5, slot_y + 5))
+                    else:
+                        # Fallback to color
+                        block_color = BLOCK_COLORS.get(block_type, GRAY)
+                        pygame.draw.rect(screen, block_color, (slot_x + 5, slot_y + 5, 30, 30))
+                    
+                    # Draw count
+                    count_text = small_font.render(str(count), True, WHITE)
+                    screen.blit(count_text, (slot_x + 25, slot_y + 25))
         
         # Draw chat preview (last 5 messages)
         chat_y = 10
@@ -1938,7 +2270,7 @@ def game_screen(conn: ServerConnection):
                 pygame.draw.line(screen, BLACK, (cursor_x, input_y + 8), (cursor_x, input_y + 32), 2)
             
             # Instructions
-            info = small_font.render("Press Enter to send, ESC to close", True, (200, 200, 200))
+            info = small_font.render(t("press_enter_send"), True, (200, 200, 200))
             screen.blit(info, (SCREEN_WIDTH // 2 - info.get_width() // 2, input_y - 30))
         
         # Draw HUD
@@ -1948,10 +2280,10 @@ def game_screen(conn: ServerConnection):
         screen.blit(info_bg, (10, SCREEN_HEIGHT - 170))
         
         hud_text = [
-            f"Server: {conn.server_name}",
-            f"Position: ({int(player_x)}, {int(player_y)})",
-            f"Players: {len(conn.players) + 1}",
-            f"Level: {conn.player_level}",
+            f"{t('server')}: {conn.server_name}",
+            f"{t('position')}: ({int(player_x)}, {int(player_y)})",
+            f"{t('players')}: {len(conn.players) + 1}",
+            f"{t('level')}: {conn.player_level}",
         ]
         hud_y = SCREEN_HEIGHT - 165
         for line in hud_text:
