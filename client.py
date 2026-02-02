@@ -186,6 +186,7 @@ DEFAULT_CONTROLS = {
     "break_block": 3,  # Right mouse button
     "place_block": 1,  # Left mouse button
     "inventory": pygame.K_e,
+    "player_list": pygame.K_TAB,
 }
 
 DEFAULT_APPEARANCE = {
@@ -226,8 +227,14 @@ TRANSLATIONS = {
         "break_block": "Break Block",
         "place_block": "Place Block",
         "inventory": "Inventory",
+        "player_list": "Player List",
         "press_key": "Press a key...",
         "press_esc_cancel": "Press ESC to cancel",
+        
+        # Player List
+        "players_online": "Players Online",
+        "hold_to_view": "Hold to view",
+        "you": "YOU",
         
         # Appearance
         "player_appearance": "Player Appearance",
@@ -299,8 +306,14 @@ TRANSLATIONS = {
         "break_block": "Rompi Blocco",
         "place_block": "Piazza Blocco",
         "inventory": "Inventario",
+        "player_list": "Lista Giocatori",
         "press_key": "Premi un tasto...",
         "press_esc_cancel": "Premi ESC per annullare",
+        
+        # Player List
+        "players_online": "Giocatori Online",
+        "hold_to_view": "Tieni premuto per vedere",
+        "you": "TU",
         
         # Appearance
         "player_appearance": "Aspetto Giocatore",
@@ -902,6 +915,7 @@ def controls_screen():
         ("break_block", "break_block"),
         ("place_block", "place_block"),
         ("inventory", "inventory"),
+        ("player_list", "player_list"),
     ]
     
     waiting_for_key = None
@@ -1719,6 +1733,112 @@ def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos)
     return inventory_slots + hotbar_slots
 
 # =========================
+# TAB PLAYER LIST
+# =========================
+def draw_player_list(screen, conn, local_player_id, appearance_color):
+    """Draw Minecraft-style player list when TAB is held"""
+    
+    # Get all players (including self)
+    all_players = [(local_player_id, appearance_color)]
+    for pid in conn.players.keys():
+        player_color = conn.player_colors.get(pid, "blue")
+        all_players.append((pid, player_color))
+    
+    # Sort by ID for consistent order
+    all_players.sort(key=lambda x: x[0])
+    
+    # Calculate dimensions
+    player_count = len(all_players)
+    player_width = 200
+    player_height = 50
+    padding = 10
+    title_height = 40
+    footer_height = 35  # Space for footer text
+    spacing_between = 5
+    
+    list_width = player_width + padding * 2
+    # Total height: title + players + footer + padding
+    list_height = title_height + (player_height + spacing_between) * player_count + footer_height + padding
+    
+    # Position: very high up (20px from top) and centered horizontally
+    list_x = SCREEN_WIDTH // 2 - list_width // 2
+    list_y = 20
+    
+    # Semi-transparent background
+    bg_surface = pygame.Surface((list_width, list_height))
+    bg_surface.set_alpha(220)
+    bg_surface.fill((40, 40, 40))
+    screen.blit(bg_surface, (list_x, list_y))
+    
+    # Border
+    pygame.draw.rect(screen, (200, 200, 200), (list_x, list_y, list_width, list_height), 3)
+    
+    # Title
+    title_text = font.render(f"{t('players_online')} ({player_count})", True, WHITE)
+    screen.blit(title_text, (list_x + list_width // 2 - title_text.get_width() // 2, list_y + 10))
+    
+    # Draw each player
+    y_offset = list_y + title_height
+    
+    for pid, color in all_players:
+        player_x = list_x + padding
+        player_y = y_offset
+        
+        # Background for player entry
+        entry_bg = pygame.Surface((player_width, player_height))
+        entry_bg.set_alpha(150)
+        
+        # Highlight local player
+        if pid == local_player_id:
+            entry_bg.fill((80, 120, 80))  # Green tint
+        else:
+            entry_bg.fill((60, 60, 60))
+        
+        screen.blit(entry_bg, (player_x, player_y))
+        pygame.draw.rect(screen, (150, 150, 150), (player_x, player_y, player_width, player_height), 1)
+        
+        # Draw mini player preview (left side) - CENTERED VERTICALLY
+        preview_scale = 1.3  # Slightly smaller to fit better
+        preview_width = 13 * preview_scale
+        preview_height = 32 * preview_scale  # Total height (head + body)
+        
+        # Center the preview vertically in the entry box
+        preview_x = player_x + 10
+        preview_y = player_y + (player_height - preview_height) // 2
+        
+        body_color = PLAYER_COLORS.get(color, (0, 255, 255))
+        
+        # Body (lower half)
+        body_rect = pygame.Rect(preview_x, preview_y + 16*preview_scale, 13*preview_scale, 16*preview_scale)
+        pygame.draw.rect(screen, body_color, body_rect)
+        pygame.draw.rect(screen, BLACK, body_rect, 1)
+        
+        # Head (upper half)
+        head_rect = pygame.Rect(preview_x, preview_y, 13*preview_scale, 16*preview_scale)
+        pygame.draw.rect(screen, PINK, head_rect)
+        pygame.draw.rect(screen, BLACK, head_rect, 1)
+        
+        # Player ID (right side)
+        id_text = font.render(pid, True, WHITE)
+        text_x = player_x + 50
+        text_y = player_y + player_height // 2 - id_text.get_height() // 2
+        screen.blit(id_text, (text_x, text_y))
+        
+        # "YOU" indicator for local player
+        if pid == local_player_id:
+            you_text = small_font.render(f"({t('you')})", True, (100, 255, 100))
+            screen.blit(you_text, (player_x + player_width - 50, text_y + 3))
+        
+        y_offset += player_height + spacing_between
+    
+    # Instructions at bottom - properly spaced below last player
+    key_name = get_key_name(controls.get("player_list", pygame.K_TAB))
+    instr_text = small_font.render(f"{t('hold_to_view')} {key_name}", True, (180, 180, 180))
+    # Position footer text with proper spacing from last player
+    footer_y = list_y + title_height + (player_height + spacing_between) * player_count + 8
+    screen.blit(instr_text, (list_x + list_width // 2 - instr_text.get_width() // 2, footer_y))
+
+# =========================
 # GAME SCREEN
 # =========================
 def game_screen(conn: ServerConnection):
@@ -2277,6 +2397,10 @@ def game_screen(conn: ServerConnection):
             info = small_font.render(t("press_enter_send"), True, (200, 200, 200))
             screen.blit(info, (SCREEN_WIDTH // 2 - info.get_width() // 2, input_y - 30))
         
+        # Draw TAB player list if configured key is held
+        if keys[controls.get("player_list", pygame.K_TAB)] and not chat_open:
+            draw_player_list(screen, conn, PLAYER_ID, appearance.get("player_color", "blue"))
+        
         # Draw HUD
         info_bg = pygame.Surface((280, 90))
         info_bg.set_alpha(180)
@@ -2313,8 +2437,3 @@ if __name__ == "__main__":
     if main_menu():
         pass
     pygame.quit()
-
-        
-
-
-    
