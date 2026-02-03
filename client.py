@@ -63,7 +63,7 @@ def load_texture_pack(pack_name):
     block_textures = {}
     
     # List of block types to load
-    block_types = ["dirt", "grass", "stone", "sand", "wood", "bedrock"]
+    block_types = ["dirt", "grass", "stone", "sand", "wood", "bedrock", "ladder"]
     
     for block_type in block_types:
         texture_path = os_module.path.join(pack_dir, f"{block_type}.png")
@@ -153,6 +153,7 @@ BLOCK_COLORS = {
     "wood": WOOD_BROWN,
     "sand": SAND_YELLOW,
     "bedrock": BEDROCK_GRAY,
+    "ladder": (139, 90, 43),  # Brown ladder
 }
 
 # Player colors (for body/clothes)
@@ -187,6 +188,8 @@ DEFAULT_CONTROLS = {
     "place_block": 1,  # Left mouse button
     "inventory": pygame.K_e,
     "player_list": pygame.K_TAB,
+    "climb_up": pygame.K_w,
+    "climb_down": pygame.K_s,
 }
 
 DEFAULT_APPEARANCE = {
@@ -228,6 +231,8 @@ TRANSLATIONS = {
         "place_block": "Place Block",
         "inventory": "Inventory",
         "player_list": "Player List",
+        "climb_up": "Climb Up",
+        "climb_down": "Climb Down",
         "press_key": "Press a key...",
         "press_esc_cancel": "Press ESC to cancel",
         
@@ -307,6 +312,8 @@ TRANSLATIONS = {
         "place_block": "Piazza Blocco",
         "inventory": "Inventario",
         "player_list": "Lista Giocatori",
+        "climb_up": "Scala Su",
+        "climb_down": "Scala Giù",
         "press_key": "Premi un tasto...",
         "press_esc_cancel": "Premi ESC per annullare",
         
@@ -556,6 +563,7 @@ class ServerConnection:
                     self.player_x = msg.get("x", 10)
                     self.player_y = msg.get("y", 3)
                     self.hotbar = msg.get("hotbar", [None] * 7)
+                    self.inventory = msg.get("inventory", [None] * 21)  # Receive inventory!
                     self.player_level = msg.get("level", 0)
                     self.max_players = msg.get("max_players", 10)
                     self.current_players = msg.get("current_players", 1)
@@ -612,6 +620,9 @@ class ServerConnection:
                 elif msg.get("type") == "hotbar_update":
                     self.hotbar = msg.get("hotbar", [None] * 7)
                 
+                elif msg.get("type") == "inventory_update":
+                    self.inventory = msg.get("inventory", [None] * 21)
+                
                 elif msg.get("type") == "disconnect":
                     reason = msg.get("reason", "Disconnected")
                     self.disconnect_reason = reason
@@ -662,6 +673,19 @@ class ServerConnection:
     def update_color(self, color):
         if self.connected:
             packet = {"type": "update_color", "color": color}
+            try:
+                send_msg(self.sock, packet)
+            except:
+                self.connected = False
+    
+    def sync_inventory(self):
+        """Sync inventory and hotbar to server after drag&drop"""
+        if self.connected:
+            packet = {
+                "type": "sync_inventory",
+                "hotbar": self.hotbar,
+                "inventory": self.inventory
+            }
             try:
                 send_msg(self.sock, packet)
             except:
@@ -911,6 +935,8 @@ def controls_screen():
         ("move_left", "move_left"),
         ("move_right", "move_right"),
         ("jump", "jump"),
+        ("climb_up", "climb_up"),
+        ("climb_down", "climb_down"),
         ("chat", "open_chat"),
         ("break_block", "break_block"),
         ("place_block", "place_block"),
@@ -2037,6 +2063,29 @@ def game_screen(conn: ServerConnection):
         if not chat_open:
             move_speed = 5
             
+            # Check if on ladder
+            player_grid_x = int(player_x)
+            player_grid_y = int(player_y)
+            on_ladder = False
+            
+            for check_y in [player_grid_y, player_grid_y + 1]:
+                if 0 <= check_y < len(conn.world) and 0 <= player_grid_x < len(conn.world[0]):
+                    if conn.world[check_y][player_grid_x] == "ladder":
+                        on_ladder = True
+                        break
+            
+            # Ladder climbing
+            if on_ladder:
+                climb_speed = 3
+                if keys[controls.get("climb_up", pygame.K_w)]:
+                    player_y -= climb_speed * delta_time
+                    player_vy = 0  # Cancel gravity
+                elif keys[controls.get("climb_down", pygame.K_s)]:
+                    player_y += climb_speed * delta_time
+                    player_vy = 0  # Cancel gravity
+                else:
+                    player_vy = 0  # Stay on ladder, no falling
+            
             if keys[controls.get("move_left", pygame.K_a)]:
                 player_vx = -move_speed
             elif keys[controls.get("move_right", pygame.K_d)]:
@@ -2044,13 +2093,14 @@ def game_screen(conn: ServerConnection):
             else:
                 player_vx = 0
             
-            # Gravity
-            player_vy += 25 * delta_time
-            if player_vy > 15:
-                player_vy = 15
+            # Gravity (not when on ladder)
+            if not on_ladder:
+                player_vy += 25 * delta_time
+                if player_vy > 15:
+                    player_vy = 15
             
-            # Jump
-            if keys[controls.get("jump", pygame.K_SPACE)] and on_ground:
+            # Jump (not when on ladder)
+            if keys[controls.get("jump", pygame.K_SPACE)] and on_ground and not on_ladder:
                 player_vy = -12
             
             # Apply horizontal velocity first
@@ -2065,7 +2115,9 @@ def game_screen(conn: ServerConnection):
                     for offset in [-1, 0, 1]:
                         check_x = player_grid_x_new + offset
                         if 0 <= check_y < len(conn.world) and 0 <= check_x < len(conn.world[0]):
-                            if conn.world[check_y][check_x] != "air":
+                            block_type = conn.world[check_y][check_x]
+                            # Ladder is climbable, not solid
+                            if block_type != "air" and block_type != "ladder":
                                 block_left = check_x
                                 block_right = check_x + 1
                                 block_top = check_y
@@ -2107,7 +2159,9 @@ def game_screen(conn: ServerConnection):
             for check_y in [player_grid_y, player_grid_y + 1, player_grid_y + 2]:
                 for check_x in [player_grid_x - 1, player_grid_x, player_grid_x + 1]:
                     if 0 <= check_y < len(conn.world) and 0 <= check_x < len(conn.world[0]):
-                        if conn.world[check_y][check_x] != "air":
+                        block_type = conn.world[check_y][check_x]
+                        # Ladder is climbable, not solid
+                        if block_type != "air" and block_type != "ladder":
                             block_left = check_x
                             block_right = check_x + 1
                             block_top = check_y
@@ -2281,6 +2335,10 @@ def game_screen(conn: ServerConnection):
                                         conn.inventory[dragging_from[1]] = old_item
                                     else:
                                         conn.hotbar[dragging_from[1]] = old_item
+                            
+                            # Sync to server after swap
+                            conn.sync_inventory()
+                            
                             dropped = True
                             break
                     
