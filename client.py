@@ -63,7 +63,7 @@ def load_texture_pack(pack_name):
     block_textures = {}
     
     # List of block types to load
-    block_types = ["dirt", "grass", "stone", "sand", "wood", "bedrock", "ladder"]
+    block_types = ["dirt", "grass", "stone", "sand", "wood", "bedrock", "ladder", "log", "leaves"]
     
     for block_type in block_types:
         texture_path = os_module.path.join(pack_dir, f"{block_type}.png")
@@ -154,6 +154,8 @@ BLOCK_COLORS = {
     "sand": SAND_YELLOW,
     "bedrock": BEDROCK_GRAY,
     "ladder": (139, 90, 43),  # Brown ladder
+    "log": (101, 67, 33),     # Dark brown log
+    "leaves": (34, 139, 34),  # Forest green leaves
 }
 
 # Player colors (for body/clothes)
@@ -190,6 +192,7 @@ DEFAULT_CONTROLS = {
     "player_list": pygame.K_TAB,
     "climb_up": pygame.K_w,
     "climb_down": pygame.K_s,
+    "sprint": pygame.K_LSHIFT,
 }
 
 DEFAULT_APPEARANCE = {
@@ -230,9 +233,12 @@ TRANSLATIONS = {
         "break_block": "Break Block",
         "place_block": "Place Block",
         "inventory": "Inventory",
+        "crafting": "Crafting",
+        "click_to_craft": "Click to craft",
         "player_list": "Player List",
         "climb_up": "Climb Up",
         "climb_down": "Climb Down",
+        "sprint": "Sprint",
         "press_key": "Press a key...",
         "press_esc_cancel": "Press ESC to cancel",
         
@@ -311,9 +317,12 @@ TRANSLATIONS = {
         "break_block": "Rompi Blocco",
         "place_block": "Piazza Blocco",
         "inventory": "Inventario",
+        "crafting": "Crafting",
+        "click_to_craft": "Clicca per creare",
         "player_list": "Lista Giocatori",
         "climb_up": "Scala Su",
         "climb_down": "Scala Giù",
+        "sprint": "Corri",
         "press_key": "Premi un tasto...",
         "press_esc_cancel": "Premi ESC per annullare",
         
@@ -377,6 +386,288 @@ TRANSLATIONS = {
         "purple": "Viola",
         "orange": "Arancione",
         "cyan": "Ciano",
+        "pink": "Rosa",
+    },
+    "português": {
+        # Main Menu
+        "title": "AuguPlatformer",
+        "your_id": "Seu ID",
+        "play": "Jogar",
+        "settings": "Configurações",
+        "exit": "Sair",
+        
+        # Settings
+        "controls": "Controles",
+        "appearance": "Aparência",
+        "language": "Idioma",
+        "back": "Voltar",
+        "reset": "Redefinir",
+        
+        # Controls
+        "move_left": "Mover Esquerda",
+        "move_right": "Mover Direita",
+        "jump": "Pular",
+        "open_chat": "Abrir Chat",
+        "break_block": "Quebrar Bloco",
+        "place_block": "Colocar Bloco",
+        "inventory": "Inventário",
+        "crafting": "Criação",
+        "click_to_craft": "Clique para criar",
+        "player_list": "Lista de Jogadores",
+        "climb_up": "Subir Escada",
+        "climb_down": "Descer Escada",
+        "sprint": "Correr",
+        "press_key": "Pressione uma tecla...",
+        "press_esc_cancel": "Pressione ESC para cancelar",
+        
+        # Player List
+        "players_online": "Jogadores Online",
+        "hold_to_view": "Segure para ver",
+        "you": "VOCÊ",
+        
+        # Appearance
+        "player_appearance": "Aparência do Jogador",
+        
+        # Server List
+        "add_server": "Adicionar Servidor",
+        "refresh": "Atualizar",
+        "join": "Entrar",
+        "modify": "Modificar",
+        "delete": "Excluir",
+        "offline": "Offline",
+        "server_offline": "Servidor offline",
+        
+        # Server Dialog
+        "enter_ip": "Digite o IP do Servidor:",
+        "enter_port": "Digite a Porta do Servidor:",
+        "enter_password": "Digite a Senha do Servidor (0 se nenhuma):",
+        "edit_ip": "Editar IP",
+        "edit_port": "Editar Porta",
+        "edit_password": "Editar Senha",
+        
+        # In-Game
+        "paused": "Pausado",
+        "resume": "Continuar",
+        "disconnect": "Desconectar",
+        "server": "Servidor",
+        "position": "Posição",
+        "players": "Jogadores",
+        "level": "Nível",
+        "press_enter_send": "Pressione Enter para enviar, ESC para fechar",
+        
+        # Messages
+        "connection_failed": "Conexão Falhou",
+        "ok": "OK",
+        "yes": "Sim",
+        "no": "Não",
+        
+        # Texture Packs
+        "texture_packs": "Pacotes de Textura",
+        "select_texture_pack": "Selecionar Pacote de Textura",
+        
+        # Video Settings
+        "video": "Vídeo",
+        "resolution": "Resolução",
+        "fullscreen": "Tela Cheia",
+        "windowed": "Janela",
+        "apply": "Aplicar",
+        
+        # Color names
+        "red": "Vermelho",
+        "blue": "Azul",
+        "green": "Verde",
+        "yellow": "Amarelo",
+        "purple": "Roxo",
+        "orange": "Laranja",
+        "cyan": "Ciano",
+        "pink": "Rosa",
+    },
+    "deutsch": {
+        # Main Menu
+        "title": "AuguPlatformer",
+        "your_id": "Deine ID",
+        "play": "Spielen",
+        "settings": "Einstellungen",
+        "exit": "Beenden",
+        
+        # Settings
+        "controls": "Steuerung",
+        "appearance": "Aussehen",
+        "language": "Sprache",
+        "back": "Zurück",
+        "reset": "Zurücksetzen",
+        
+        # Controls
+        "move_left": "Nach Links",
+        "move_right": "Nach Rechts",
+        "jump": "Springen",
+        "open_chat": "Chat Öffnen",
+        "break_block": "Block Abbauen",
+        "place_block": "Block Platzieren",
+        "inventory": "Inventar",
+        "crafting": "Herstellung",
+        "click_to_craft": "Klicken zum Herstellen",
+        "player_list": "Spielerliste",
+        "climb_up": "Hochklettern",
+        "climb_down": "Runterklettern",
+        "sprint": "Rennen",
+        "press_key": "Taste drücken...",
+        "press_esc_cancel": "ESC zum Abbrechen",
+        
+        # Player List
+        "players_online": "Spieler Online",
+        "hold_to_view": "Halten zum Anzeigen",
+        "you": "DU",
+        
+        # Appearance
+        "player_appearance": "Spieler Aussehen",
+        
+        # Server List
+        "add_server": "Server Hinzufügen",
+        "refresh": "Aktualisieren",
+        "join": "Beitreten",
+        "modify": "Bearbeiten",
+        "delete": "Löschen",
+        "offline": "Offline",
+        "server_offline": "Server ist offline",
+        
+        # Server Dialog
+        "enter_ip": "Server-IP eingeben:",
+        "enter_port": "Server-Port eingeben:",
+        "enter_password": "Server-Passwort eingeben (0 wenn keins):",
+        "edit_ip": "IP Bearbeiten",
+        "edit_port": "Port Bearbeiten",
+        "edit_password": "Passwort Bearbeiten",
+        
+        # In-Game
+        "paused": "Pausiert",
+        "resume": "Fortsetzen",
+        "disconnect": "Trennen",
+        "server": "Server",
+        "position": "Position",
+        "players": "Spieler",
+        "level": "Level",
+        "press_enter_send": "Enter zum Senden, ESC zum Schließen",
+        
+        # Messages
+        "connection_failed": "Verbindung Fehlgeschlagen",
+        "ok": "OK",
+        "yes": "Ja",
+        "no": "Nein",
+        
+        # Texture Packs
+        "texture_packs": "Texturpakete",
+        "select_texture_pack": "Texturpaket Auswählen",
+        
+        # Video Settings
+        "video": "Video",
+        "resolution": "Auflösung",
+        "fullscreen": "Vollbild",
+        "windowed": "Fenster",
+        "apply": "Anwenden",
+        
+        # Color names
+        "red": "Rot",
+        "blue": "Blau",
+        "green": "Grün",
+        "yellow": "Gelb",
+        "purple": "Lila",
+        "orange": "Orange",
+        "cyan": "Cyan",
+        "pink": "Rosa",
+    },
+    "español": {
+        # Main Menu
+        "title": "AuguPlatformer",
+        "your_id": "Tu ID",
+        "play": "Jugar",
+        "settings": "Configuración",
+        "exit": "Salir",
+        
+        # Settings
+        "controls": "Controles",
+        "appearance": "Apariencia",
+        "language": "Idioma",
+        "back": "Volver",
+        "reset": "Restablecer",
+        
+        # Controls
+        "move_left": "Mover Izquierda",
+        "move_right": "Mover Derecha",
+        "jump": "Saltar",
+        "open_chat": "Abrir Chat",
+        "break_block": "Romper Bloque",
+        "place_block": "Colocar Bloque",
+        "inventory": "Inventario",
+        "crafting": "Fabricación",
+        "click_to_craft": "Clic para fabricar",
+        "player_list": "Lista de Jugadores",
+        "climb_up": "Subir Escalera",
+        "climb_down": "Bajar Escalera",
+        "sprint": "Correr",
+        "press_key": "Presiona una tecla...",
+        "press_esc_cancel": "Presiona ESC para cancelar",
+        
+        # Player List
+        "players_online": "Jugadores en Línea",
+        "hold_to_view": "Mantén para ver",
+        "you": "TÚ",
+        
+        # Appearance
+        "player_appearance": "Apariencia del Jugador",
+        
+        # Server List
+        "add_server": "Añadir Servidor",
+        "refresh": "Actualizar",
+        "join": "Unirse",
+        "modify": "Modificar",
+        "delete": "Eliminar",
+        "offline": "Desconectado",
+        "server_offline": "Servidor desconectado",
+        
+        # Server Dialog
+        "enter_ip": "Introduce la IP del Servidor:",
+        "enter_port": "Introduce el Puerto del Servidor:",
+        "enter_password": "Introduce la Contraseña del Servidor (0 si ninguna):",
+        "edit_ip": "Editar IP",
+        "edit_port": "Editar Puerto",
+        "edit_password": "Editar Contraseña",
+        
+        # In-Game
+        "paused": "Pausado",
+        "resume": "Reanudar",
+        "disconnect": "Desconectar",
+        "server": "Servidor",
+        "position": "Posición",
+        "players": "Jugadores",
+        "level": "Nivel",
+        "press_enter_send": "Presiona Enter para enviar, ESC para cerrar",
+        
+        # Messages
+        "connection_failed": "Conexión Fallida",
+        "ok": "OK",
+        "yes": "Sí",
+        "no": "No",
+        
+        # Texture Packs
+        "texture_packs": "Paquetes de Texturas",
+        "select_texture_pack": "Seleccionar Paquete de Texturas",
+        
+        # Video Settings
+        "video": "Vídeo",
+        "resolution": "Resolución",
+        "fullscreen": "Pantalla Completa",
+        "windowed": "Ventana",
+        "apply": "Aplicar",
+        
+        # Color names
+        "red": "Rojo",
+        "blue": "Azul",
+        "green": "Verde",
+        "yellow": "Amarillo",
+        "purple": "Morado",
+        "orange": "Naranja",
+        "cyan": "Cian",
         "pink": "Rosa",
     }
 }
@@ -513,6 +804,8 @@ class ServerConnection:
         self.player_x = 10
         self.player_y = 3
         self.hotbar = [None] * 7
+        self.inventory = [None] * 21
+        self.crafting_grid = [None] * 9  # 3x3 crafting grid
         self.chat_messages = []
         self.max_chat_display = 5
         self.last_position_send = time.time()
@@ -937,6 +1230,7 @@ def controls_screen():
         ("jump", "jump"),
         ("climb_up", "climb_up"),
         ("climb_down", "climb_down"),
+        ("sprint", "sprint"),
         ("chat", "open_chat"),
         ("break_block", "break_block"),
         ("place_block", "place_block"),
@@ -1040,7 +1334,10 @@ def language_screen():
     
     languages = [
         ("english", "English 🇬🇧"),
-        ("italiano", "Italiano 🇮🇹")
+        ("italiano", "Italiano 🇮🇹"),
+        ("português", "Português 🇧🇷"),
+        ("deutsch", "Deutsch 🇩🇪"),
+        ("español", "Español 🇪🇸")
     ]
     
     lang_buttons = []
@@ -1629,6 +1926,23 @@ def ingame_settings(conn):
 # =========================
 # INVENTORY HUD
 # =========================
+def calculate_craft(crafting_grid):
+    """Calculate crafting result from 3x3 grid. Returns {"block": type, "count": n} or None"""
+    # Count items in crafting grid
+    item_counts = {}
+    for slot in crafting_grid:
+        if slot:
+            block = slot["block"]
+            item_counts[block] = item_counts.get(block, 0) + slot["count"]
+    
+    # Recipe: 1 log → 2 wood (any position)
+    if "log" in item_counts and item_counts["log"] >= 1:
+        # Check if ONLY log is present
+        if len(item_counts) == 1:
+            return {"block": "wood", "count": 2}
+    
+    return None
+
 def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos):
     """Draw compact inventory HUD above hotbar with drag & drop"""
     
@@ -1639,14 +1953,16 @@ def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos)
     slot_size = 40
     spacing = 5
     
-    # Calculate HUD position - same X as hotbar, extended upwards
+    # Calculate HUD position - expanded to include crafting on left
     hotbar_width = 7 * 50 + 20
     hotbar_x = SCREEN_WIDTH // 2 - hotbar_width // 2
     hotbar_y = SCREEN_HEIGHT - 70
     
-    # HUD dimensions
-    hud_width = 7 * slot_size + 6 * spacing + 20
-    hud_height = 4 * slot_size + 3 * spacing + 80  # 3 inventory rows + hotbar + header
+    # HUD dimensions - expanded for crafting (3x3 grid + output + spacing)
+    crafting_width = 3 * slot_size + 2 * spacing + 60  # 3x3 grid + output slot + margins
+    inventory_width = 7 * slot_size + 6 * spacing
+    hud_width = crafting_width + inventory_width + 60  # Total width with extra spacing
+    hud_height = 4 * slot_size + 3 * spacing + 100  # 3 inventory rows + hotbar + header + extra space
     
     # Start from hotbar position, extend upwards
     hud_x = SCREEN_WIDTH // 2 - hud_width // 2
@@ -1664,11 +1980,11 @@ def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos)
     # Header with player info
     header_y = hud_y + 5
     
-    # Player ID (smaller)
+    # Player ID on RIGHT side (not overlapping crafting)
     id_text = small_font.render(f"{PLAYER_ID}", True, (255, 255, 100))
-    screen.blit(id_text, (hud_x + 10, header_y))
+    screen.blit(id_text, (hud_x + hud_width - 150, header_y))
     
-    # Player preview (small)
+    # Player preview (small) - next to ID
     preview_x = hud_x + hud_width - 40
     preview_y = header_y
     body_color = PLAYER_COLORS.get(appearance_color, (0, 255, 255))
@@ -1679,20 +1995,99 @@ def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos)
     pygame.draw.rect(screen, PINK, (preview_x, preview_y, 15, 10))
     pygame.draw.rect(screen, BLACK, (preview_x, preview_y, 15, 10), 1)
     
-    # Inventory title
+    # Inventory title (CENTER)
     inv_title = small_font.render(t("inventory"), True, WHITE)
     screen.blit(inv_title, (hud_x + hud_width//2 - inv_title.get_width()//2, header_y))
     
-    # Start of slots
-    slots_start_y = hud_y + 30
-    slots_start_x = hud_x + 10
+    # Start of slots - MORE SPACE for header (40 instead of 30)
+    slots_start_y = hud_y + 40
+    crafting_start_x = hud_x + 10
+    
+    # ===== CRAFTING GRID (LEFT SIDE) =====
+    crafting_title = small_font.render(t("crafting"), True, (255, 200, 100))
+    screen.blit(crafting_title, (crafting_start_x, slots_start_y - 20))
+    
+    crafting_slots = []
+    # Draw 3x3 crafting grid
+    for row in range(3):
+        for col in range(3):
+            idx = row * 3 + col
+            slot_x = crafting_start_x + col * (slot_size + spacing)
+            slot_y = slots_start_y + row * (slot_size + spacing)
+            slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
+            
+            # Draw slot with brown tint for crafting
+            pygame.draw.rect(screen, (70, 60, 50), slot_rect)
+            pygame.draw.rect(screen, (180, 160, 140), slot_rect, 1)
+            
+            # Draw item if exists
+            if conn.crafting_grid[idx] is not None:
+                block_type = conn.crafting_grid[idx]["block"]
+                count = conn.crafting_grid[idx]["count"]
+                
+                texture = block_textures.get(block_type)
+                if texture:
+                    scaled_texture = pygame.transform.scale(texture, (slot_size - 6, slot_size - 6))
+                    screen.blit(scaled_texture, (slot_x + 3, slot_y + 3))
+                else:
+                    block_color = BLOCK_COLORS.get(block_type, GRAY)
+                    pygame.draw.rect(screen, block_color, (slot_x + 3, slot_y + 3, slot_size - 6, slot_size - 6))
+                
+                count_text = small_font.render(str(count), True, WHITE)
+                screen.blit(count_text, (slot_x + slot_size - 15, slot_y + slot_size - 15))
+            
+            crafting_slots.append(('crafting', idx, slot_rect))
+    
+    # Crafting output slot (to the right with arrow)
+    output_x = crafting_start_x + 3 * (slot_size + spacing) + 20
+    output_y = slots_start_y + slot_size + spacing  # Middle row
+    output_rect = pygame.Rect(output_x, output_y, slot_size, slot_size)
+    
+    # Draw arrow
+    arrow_x = crafting_start_x + 3 * (slot_size + spacing) + 5
+    arrow_y = output_y + slot_size // 2
+    pygame.draw.polygon(screen, (200, 200, 200), [
+        (arrow_x, arrow_y - 5),
+        (arrow_x + 10, arrow_y),
+        (arrow_x, arrow_y + 5)
+    ])
+    
+    # Draw output slot (golden for result)
+    pygame.draw.rect(screen, (80, 70, 40), output_rect)
+    pygame.draw.rect(screen, (255, 215, 0), output_rect, 2)
+    
+    # Calculate crafting result
+    craft_result = calculate_craft(conn.crafting_grid)
+    if craft_result:
+        block_type = craft_result["block"]
+        count = craft_result["count"]
+        
+        texture = block_textures.get(block_type)
+        if texture:
+            scaled_texture = pygame.transform.scale(texture, (slot_size - 6, slot_size - 6))
+            screen.blit(scaled_texture, (output_x + 3, output_y + 3))
+        else:
+            block_color = BLOCK_COLORS.get(block_type, GRAY)
+            pygame.draw.rect(screen, block_color, (output_x + 3, output_y + 3, slot_size - 6, slot_size - 6))
+        
+        count_text = small_font.render(str(count), True, WHITE)
+        screen.blit(count_text, (output_x + slot_size - 15, output_y + slot_size - 15))
+        
+        # Hint text
+        hint = small_font.render(t("click_to_craft"), True, (200, 200, 200))
+        screen.blit(hint, (output_x - 10, output_y + slot_size + 5))
+    
+    crafting_slots.append(('craft_output', 0, output_rect))
+    
+    # ===== INVENTORY SLOTS (RIGHT SIDE) =====
+    inventory_start_x = output_x + slot_size + 30
     
     # Draw 3 rows of inventory
     inventory_slots = []
     for row in range(3):
         for col in range(7):
             idx = row * 7 + col
-            slot_x = slots_start_x + col * (slot_size + spacing)
+            slot_x = inventory_start_x + col * (slot_size + spacing)
             slot_y = slots_start_y + row * (slot_size + spacing)
             slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
             
@@ -1724,7 +2119,7 @@ def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos)
     hotbar_y = slots_start_y + 3 * (slot_size + spacing) + 10
     hotbar_slots = []
     for i in range(7):
-        slot_x = slots_start_x + i * (slot_size + spacing)
+        slot_x = inventory_start_x + i * (slot_size + spacing)
         slot_y = hotbar_y
         slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
         
@@ -1756,7 +2151,7 @@ def draw_inventory_hud(screen, conn, appearance_color, selected_slot, mouse_pos)
         
         hotbar_slots.append(('hotbar', i, slot_rect))
     
-    return inventory_slots + hotbar_slots
+    return crafting_slots + inventory_slots + hotbar_slots
 
 # =========================
 # TAB PLAYER LIST
@@ -1934,6 +2329,7 @@ def game_screen(conn: ServerConnection):
     
     # Inventory
     inventory_open = False
+    inv_slots = []  # Track inventory slots for click detection
     dragging_item = None
     dragging_from = None
     
@@ -2022,8 +2418,47 @@ def game_screen(conn: ServerConnection):
                 if inventory_open:
                     # Handle inventory drag & drop
                     if event.button == 1:  # Left click
-                        # Get inventory slots (will be calculated during rendering)
-                        pass  # Handled in MOUSEBUTTONUP with stored slots
+                        # Check if clicking craft_output
+                        for slot_type, slot_idx, slot_rect in inv_slots:
+                            if slot_rect.collidepoint(mouse_pos) and slot_type == 'craft_output':
+                                craft_result = calculate_craft(conn.crafting_grid)
+                                if craft_result:
+                                    # Consume 1 log from crafting grid
+                                    for i, slot in enumerate(conn.crafting_grid):
+                                        if slot and slot["block"] == "log":
+                                            slot["count"] -= 1
+                                            if slot["count"] <= 0:
+                                                conn.crafting_grid[i] = None
+                                            break
+                                    
+                                    # Add result to inventory
+                                    added = False
+                                    for i, slot in enumerate(conn.inventory):
+                                        if slot is None:
+                                            conn.inventory[i] = {"block": craft_result["block"], "count": craft_result["count"]}
+                                            added = True
+                                            break
+                                        elif slot["block"] == craft_result["block"] and slot["count"] < 64:
+                                            add_amount = min(craft_result["count"], 64 - slot["count"])
+                                            slot["count"] += add_amount
+                                            added = True
+                                            break
+                                    
+                                    if not added:
+                                        # Try hotbar
+                                        for i, slot in enumerate(conn.hotbar):
+                                            if slot is None:
+                                                conn.hotbar[i] = {"block": craft_result["block"], "count": craft_result["count"]}
+                                                added = True
+                                                break
+                                            elif slot["block"] == craft_result["block"] and slot["count"] < 64:
+                                                add_amount = min(craft_result["count"], 64 - slot["count"])
+                                                slot["count"] += add_amount
+                                                added = True
+                                                break
+                                    
+                                    conn.sync_inventory()
+                                break
                 elif not chat_open:
                     # Get block position under mouse
                     world_mouse_x = (mouse_pos[0] + camera_x) // BLOCK_SIZE
@@ -2062,6 +2497,10 @@ def game_screen(conn: ServerConnection):
         # Player movement (only if not in chat)
         if not chat_open:
             move_speed = 5
+            
+            # Sprint modifier
+            if keys[controls.get("sprint", pygame.K_LSHIFT)]:
+                move_speed = 9  # Sprint is 1.8x faster
             
             # Check if on ladder
             player_grid_x = int(player_x)
@@ -2301,7 +2740,15 @@ def game_screen(conn: ServerConnection):
                     # Check if starting drag
                     for slot_type, slot_idx, slot_rect in inv_slots:
                         if slot_rect.collidepoint(mouse_pos):
-                            if slot_type == 'inventory':
+                            if slot_type == 'crafting':
+                                if conn.crafting_grid[slot_idx] is not None:
+                                    dragging_item = conn.crafting_grid[slot_idx]
+                                    dragging_from = (slot_type, slot_idx)
+                                    conn.crafting_grid[slot_idx] = None
+                            elif slot_type == 'craft_output':
+                                # Can't drag from output, must click
+                                pass
+                            elif slot_type == 'inventory':
                                 if conn.inventory[slot_idx] is not None:
                                     dragging_item = conn.inventory[slot_idx]
                                     dragging_from = (slot_type, slot_idx)
@@ -2319,32 +2766,161 @@ def game_screen(conn: ServerConnection):
                     for slot_type, slot_idx, slot_rect in inv_slots:
                         if slot_rect.collidepoint(mouse_pos):
                             # Swap items
-                            if slot_type == 'inventory':
-                                old_item = conn.inventory[slot_idx]
-                                conn.inventory[slot_idx] = dragging_item
-                                if old_item is not None:
-                                    if dragging_from[0] == 'inventory':
-                                        conn.inventory[dragging_from[1]] = old_item
+                            if slot_type == 'craft_output':
+                                # Click on craft output → take result and consume ingredients
+                                craft_result = calculate_craft(conn.crafting_grid)
+                                if craft_result:
+                                    # Consume 1 log from crafting grid
+                                    for i, slot in enumerate(conn.crafting_grid):
+                                        if slot and slot["block"] == "log":
+                                            slot["count"] -= 1
+                                            if slot["count"] <= 0:
+                                                conn.crafting_grid[i] = None
+                                            break
+                                    
+                                    # Add result to inventory (first empty slot)
+                                    added = False
+                                    for i, slot in enumerate(conn.inventory):
+                                        if slot is None:
+                                            conn.inventory[i] = {"block": craft_result["block"], "count": craft_result["count"]}
+                                            added = True
+                                            break
+                                        elif slot["block"] == craft_result["block"] and slot["count"] < 64:
+                                            slot["count"] += craft_result["count"]
+                                            if slot["count"] > 64:
+                                                slot["count"] = 64
+                                            added = True
+                                            break
+                                    
+                                    if not added:
+                                        # Try hotbar
+                                        for i, slot in enumerate(conn.hotbar):
+                                            if slot is None:
+                                                conn.hotbar[i] = {"block": craft_result["block"], "count": craft_result["count"]}
+                                                added = True
+                                                break
+                                    
+                                    conn.sync_inventory()
+                                dropped = True
+                            elif slot_type == 'crafting':
+                                old_item = conn.crafting_grid[slot_idx]
+                                
+                                # Smart stacking: if same block type and total <= 64, merge
+                                if old_item and dragging_item and old_item["block"] == dragging_item["block"]:
+                                    total = old_item["count"] + dragging_item["count"]
+                                    if total <= 64:
+                                        # Merge into target slot
+                                        old_item["count"] = total
+                                        # Clear source slot
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = None
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = None
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = None
                                     else:
-                                        conn.hotbar[dragging_from[1]] = old_item
+                                        # Can't merge, normal swap
+                                        conn.crafting_grid[slot_idx] = dragging_item
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = old_item
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = old_item
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = old_item
+                                else:
+                                    # Different blocks or empty slot, normal swap
+                                    conn.crafting_grid[slot_idx] = dragging_item
+                                    if old_item is not None:
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = old_item
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = old_item
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = old_item
+                                dropped = True
+                            elif slot_type == 'inventory':
+                                old_item = conn.inventory[slot_idx]
+                                
+                                # Smart stacking: if same block type and total <= 64, merge
+                                if old_item and dragging_item and old_item["block"] == dragging_item["block"]:
+                                    total = old_item["count"] + dragging_item["count"]
+                                    if total <= 64:
+                                        # Merge into target slot
+                                        old_item["count"] = total
+                                        # Clear source slot
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = None
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = None
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = None
+                                    else:
+                                        # Can't merge, normal swap
+                                        conn.inventory[slot_idx] = dragging_item
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = old_item
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = old_item
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = old_item
+                                else:
+                                    # Different blocks or empty slot, normal swap
+                                    conn.inventory[slot_idx] = dragging_item
+                                    if old_item is not None:
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = old_item
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = old_item
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = old_item
                             else:  # hotbar
                                 old_item = conn.hotbar[slot_idx]
-                                conn.hotbar[slot_idx] = dragging_item
-                                if old_item is not None:
-                                    if dragging_from[0] == 'inventory':
-                                        conn.inventory[dragging_from[1]] = old_item
+                                
+                                # Smart stacking: if same block type and total <= 64, merge
+                                if old_item and dragging_item and old_item["block"] == dragging_item["block"]:
+                                    total = old_item["count"] + dragging_item["count"]
+                                    if total <= 64:
+                                        # Merge into target slot
+                                        old_item["count"] = total
+                                        # Clear source slot
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = None
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = None
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = None
                                     else:
-                                        conn.hotbar[dragging_from[1]] = old_item
+                                        # Can't merge, normal swap
+                                        conn.hotbar[slot_idx] = dragging_item
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = old_item
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = old_item
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = old_item
+                                else:
+                                    # Different blocks or empty slot, normal swap
+                                    conn.hotbar[slot_idx] = dragging_item
+                                    if old_item is not None:
+                                        if dragging_from[0] == 'crafting':
+                                            conn.crafting_grid[dragging_from[1]] = old_item
+                                        elif dragging_from[0] == 'inventory':
+                                            conn.inventory[dragging_from[1]] = old_item
+                                        else:
+                                            conn.hotbar[dragging_from[1]] = old_item
                             
-                            # Sync to server after swap
-                            conn.sync_inventory()
+                            # Sync to server after swap (unless craft_output which already synced)
+                            if slot_type != 'craft_output':
+                                conn.sync_inventory()
                             
                             dropped = True
                             break
                     
                     # If not dropped, return to original
                     if not dropped:
-                        if dragging_from[0] == 'inventory':
+                        if dragging_from[0] == 'crafting':
+                            conn.crafting_grid[dragging_from[1]] = dragging_item
+                        elif dragging_from[0] == 'inventory':
                             conn.inventory[dragging_from[1]] = dragging_item
                         else:
                             conn.hotbar[dragging_from[1]] = dragging_item
